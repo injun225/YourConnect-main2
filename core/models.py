@@ -1,0 +1,213 @@
+from django.db import models
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+
+# 사용자 매니저
+class UserManager(BaseUserManager):
+    def create_user(self, email, password=None, **extra_fields):
+        if not email:
+            raise ValueError("Email is required.")
+        email = self.normalize_email(email)
+
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save()
+        return user
+
+    def create_superuser(self, email, password, **extra_fields):
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        extra_fields.setdefault("is_active", True)
+        return self.create_user(email, password, **extra_fields)
+
+
+# ✅ 1️⃣ 사용자(User)
+class User(AbstractBaseUser, PermissionsMixin):
+    ROLE_CHOICES = (
+        ("mentee", "일반"),
+        ("mentor", "멘토"),
+        ("company", "기업"),
+    )
+
+    GENDER_CHOICES = (
+        ("female", "여자"),
+        ("male", "남자"),
+    )
+
+    email = models.EmailField(unique=True)
+    name = models.CharField(max_length=50, null=True, blank=True)
+    birth = models.CharField(max_length=20, null=True, blank=True)
+    gender = models.CharField(max_length=10, choices=GENDER_CHOICES, null=True, blank=True)
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES)
+
+    # 약관 동의
+    agree_age = models.BooleanField(default=False)
+    agree_service = models.BooleanField(default=False)
+    agree_personal_info = models.BooleanField(default=False)
+    agree_ad = models.BooleanField(default=False)
+
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = []
+
+    objects = UserManager()
+
+    def __str__(self):
+        return self.email
+
+
+# ✅ 2️⃣ 멤버십 요금제
+class Membership(models.Model):
+    STATUS_CHOICES = [
+        ('활성', '활성'),
+        ('비활성', '비활성'),
+    ]
+    name = models.CharField(max_length=50)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    benefits = models.TextField(blank=True, null=True)
+    duration_month = models.IntegerField(default=1)
+    created_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='활성')
+
+    def __str__(self):
+        return self.name
+
+
+# ✅ 3️⃣ 경력 정보
+class Experience(models.Model):
+    CAREER_TYPE_CHOICES = [
+        ('정규직', '정규직'),
+        ('인턴', '인턴'),
+        ('프로젝트', '프로젝트'),
+        ('기타', '기타'),
+    ]
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    company = models.CharField(max_length=100)
+    role = models.CharField(max_length=100)
+    career_type = models.CharField(max_length=20, choices=CAREER_TYPE_CHOICES, blank=True, null=True)
+    skills = models.TextField(blank=True, null=True)
+    start_date = models.DateField()
+    end_date = models.DateField(blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.company} - {self.role}"
+
+
+# ✅ 4️⃣ 채팅방
+class Chat(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    def __str__(self):
+        return f"Chat #{self.id}"
+
+
+# ✅ 5️⃣ 채팅 참여자
+class ChatParticipant(models.Model):
+    ROLE_CHOICES = [
+        ('멘토', '멘토'),
+        ('멘티', '멘티'),
+    ]
+    chat = models.ForeignKey(Chat, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES)
+    joined_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('chat', 'user')
+
+    def __str__(self):
+        return f"{self.user.name or self.user.email} in Chat {self.chat.id}"
+
+
+# ✅ 6️⃣ 채팅 메시지
+class ChatMessage(models.Model):
+    chat = models.ForeignKey(Chat, on_delete=models.CASCADE)
+    sender = models.ForeignKey(User, on_delete=models.CASCADE)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    def __str__(self):
+        return f"Message from {self.sender.name or self.sender.email} ({self.chat.id})"
+
+
+# ✅ 7️⃣ AI 피드백 로그
+class AiFeedback(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    input_text = models.TextField()
+    ai_response = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    def __str__(self):
+        return f"AI Feedback - {self.user.name or self.user.email}"
+
+
+# ✅ 8️⃣ 멘토링 예약
+class MentorSession(models.Model):
+    STATUS_CHOICES = [
+        ('예약', '예약'),
+        ('완료', '완료'),
+        ('취소', '취소'),
+    ]
+    mentor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='mentor_sessions')
+    mentee = models.ForeignKey(User, on_delete=models.CASCADE, related_name='mentee_sessions')
+    schedule_time = models.DateTimeField()
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='예약')
+    created_at = models.DateTimeField(auto_now_add=True)
+    def __str__(self):
+        return f"Session {self.id} ({self.mentor.name or self.mentor.email} ↔ {self.mentee.name or self.mentee.email})"
+
+
+# ✅ 9️⃣ 채용공고
+class JobPost(models.Model):
+    STATUS_CHOICES = [
+        ('모집중', '모집중'),
+        ('마감', '마감'),
+        ('비공개', '비공개'),
+    ]
+    JOB_TYPE_CHOICES = [
+        ('정규직', '정규직'),
+        ('인턴', '인턴'),
+        ('계약직', '계약직'),
+        ('프리랜서', '프리랜서'),
+    ]
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    title = models.CharField(max_length=200)
+    company = models.CharField(max_length=100)
+    position = models.CharField(max_length=100)
+    job_type = models.CharField(max_length=20, choices=JOB_TYPE_CHOICES, default='정규직')
+    location = models.CharField(max_length=100, blank=True, null=True)
+    salary = models.CharField(max_length=50, blank=True, null=True)
+    description = models.TextField()
+    skills = models.TextField(blank=True, null=True)
+    deadline = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='모집중')
+    def __str__(self):
+        return f"{self.title} ({self.company})"
+
+
+# ✅ 🔟 채용 지원 내역
+class JobApplication(models.Model):
+    job = models.ForeignKey(JobPost, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    resume_link = models.URLField(blank=True, null=True)
+    cover_letter = models.TextField(blank=True, null=True)
+    applied_at = models.DateTimeField(auto_now_add=True)
+    def __str__(self):
+        return f"{self.user.name or self.user.email} → {self.job.title}"
+
+
+# ✅ 11. 공고 북마크
+class JobBookmark(models.Model):
+    job = models.ForeignKey(JobPost, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('job', 'user')
+
+    def __str__(self):
+        return f"{self.user.name or self.user.email} bookmarked {self.job.title}"

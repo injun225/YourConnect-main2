@@ -1,0 +1,32 @@
+<div id="job-list"></div>
+
+<script>
+async function loadJobs() {
+    const username = "Boss";  // 로그인한 사용자명 넣을 예정
+    const res = await fetch(`http://127.0.0.1:8000/api/jobs/${username}/`);
+    const jobs = await res.json();
+
+    const box = document.getElementById("job-list");
+    box.innerHTML = "";
+
+    jobs.forEach(job => {
+        box.innerHTML += `
+            <div class="job-card">
+                <h3>${job.title}</h3>
+                <a href="${job.link}" target="_blank">공고 보기</a>
+            </div>
+        `;
+    });
+}
+
+loadJobs();
+</script>
+
+<style>
+    .job-card {
+        border: 1px solid #ddd;
+        padding: 12px;
+        border-radius: 10px;
+        margin-bottom: 10px;
+    }
+</style>
