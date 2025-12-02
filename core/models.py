@@ -1,3 +1,4 @@
+# 인준 커밋
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 
