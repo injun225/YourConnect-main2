@@ -34,11 +34,67 @@ class User(AbstractBaseUser, PermissionsMixin):
         ("male", "남자"),
     )
 
+    JOB_CHOICES = (
+        ("개발", "개발"),
+        ("데이터", "데이터"),
+        ("인공지능/머신러닝", "인공지능/머신러닝"),
+        ("디자인", "디자인"),
+        ("QA/테스트", "QA/테스트"),
+    )
+
+    JOB_LEVEL_CHOICES = (
+        ("신입", "신입"),
+        ("주임", "주임"),
+        ("대리", "대리"),
+        ("과장", "과장"),
+        ("차장", "차장"),
+        ("부장", "부장"),
+        ("임원", "임원"),
+    )
+
+    COMPANY_TYPE_CHOICES = (
+        ("대기업", "대기업"),
+        ("중견기업", "중견기업"),
+        ("중소기업", "중소기업"),
+        ("외국계", "외국계"),
+        ("공기업", "공기업"),
+        ("벤처기업", "벤처기업"),
+    )
+
+    REGION_CHOICES = (
+        ("서울", "서울"),
+        ("경기", "경기"),
+        ("인천", "인천"),
+        ("대전", "대전"),
+        ("세종", "세종"),
+        ("충남", "충남"),
+        ("충북", "충북"),
+        ("광주", "광주"),
+        ("전남", "전남"),
+        ("전북", "전북"),
+        ("대구", "대구"),
+        ("경북", "경북"),
+        ("경남", "경남"),
+        ("부산", "부산"),
+        ("울산", "울산"),
+        ("강원", "강원"),
+        ("제주", "제주"),
+    )
+
     email = models.EmailField(unique=True)
     name = models.CharField(max_length=50, null=True, blank=True)
     birth = models.CharField(max_length=20, null=True, blank=True)
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES, null=True, blank=True)
     role = models.CharField(max_length=10, choices=ROLE_CHOICES)
+
+    # 보유 스펙 정보
+    job = models.CharField(max_length=50, choices=JOB_CHOICES, null=True, blank=True, verbose_name="직무")
+    job_detail = models.CharField(max_length=100, null=True, blank=True, verbose_name="세부 직무")
+    job_level = models.CharField(max_length=20, choices=JOB_LEVEL_CHOICES, null=True, blank=True, verbose_name="직급")
+    company_type = models.CharField(max_length=20, choices=COMPANY_TYPE_CHOICES, null=True, blank=True, verbose_name="기업형태")
+    experience_years = models.IntegerField(default=0, verbose_name="경력")
+    region = models.CharField(max_length=50, null=True, blank=True, verbose_name="근무지역")
+    company_name = models.CharField(max_length=100, null=True, blank=True, verbose_name="회사명")
 
     # 약관 동의
     agree_age = models.BooleanField(default=False)

@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import get_user_model
+from .serializers import SignupSerializer, UserProfileSerializer, SpecSerializer
 
 User = get_user_model()
 
@@ -49,6 +50,96 @@ class SignupAPI(APIView):
         user.save()
 
         return Response({"message": "회원가입 성공"}, status=status.HTTP_201_CREATED)
+
+# -----------------------------
+# 프로필 조회/수정 API
+# -----------------------------
+class UserProfileAPI(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """프로필 조회"""
+        user = request.user
+        serializer = UserProfileSerializer(user)
+        return Response({
+            "data": serializer.data,
+            "message": "프로필 조회 성공"
+        }, status=status.HTTP_200_OK)
+
+    def put(self, request):
+        """프로필 수정 (전체)"""
+        user = request.user
+        serializer = UserProfileSerializer(user, data=request.data, partial=False)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "data": serializer.data,
+                "message": "프로필이 수정되었습니다."
+            }, status=status.HTTP_200_OK)
+        return Response({
+            "errors": serializer.errors,
+            "message": "프로필 수정 실패"
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    def patch(self, request):
+        """프로필 수정 (부분)"""
+        user = request.user
+        serializer = UserProfileSerializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "data": serializer.data,
+                "message": "프로필이 수정되었습니다."
+            }, status=status.HTTP_200_OK)
+        return Response({
+            "errors": serializer.errors,
+            "message": "프로필 수정 실패"
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+# -----------------------------
+# 보유 스펙 조회/수정 API
+# -----------------------------
+class SpecAPI(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """보유 스펙 조회"""
+        user = request.user
+        serializer = SpecSerializer(user)
+        return Response({
+            "data": serializer.data,
+            "message": "보유 스펙 조회 성공"
+        }, status=status.HTTP_200_OK)
+
+    def put(self, request):
+        """보유 스펙 수정 (전체)"""
+        user = request.user
+        serializer = SpecSerializer(user, data=request.data, partial=False)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "data": serializer.data,
+                "message": "보유 스펙이 수정되었습니다."
+            }, status=status.HTTP_200_OK)
+        return Response({
+            "errors": serializer.errors,
+            "message": "보유 스펙 수정 실패"
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    def patch(self, request):
+        """보유 스펙 수정 (부분)"""
+        user = request.user
+        serializer = SpecSerializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "data": serializer.data,
+                "message": "보유 스펙이 수정되었습니다."
+            }, status=status.HTTP_200_OK)
+        return Response({
+            "errors": serializer.errors,
+            "message": "보유 스펙 수정 실패"
+        }, status=status.HTTP_400_BAD_REQUEST)
 
 # -----------------------------
 # 프로필 수정 (로그인 필요)
